@@ -9,19 +9,25 @@ import Login from "./pages/login/Login";
 import ForgotPassword from "./pages/forgotPassword/ForgotPassword";
 import ActivateAccount from "./pages/activateAccount/ActivateAccount";
 import LanguageSelector from "./components/LanguageSelector";
+import { StyledEngineProvider } from "@mui/material/styles";
 
 function App() {
   return (
     <>
       <LanguageSelector />
-      <Router>
-        <Routes>
-          <Route path="/" element={<Navigate replace to="/login" />} />
-          <Route path="/login" element={<Login />}></Route>
-          <Route path="/forgot-password" element={<ForgotPassword />}></Route>
-          <Route path="/activate-account" element={<ActivateAccount />}></Route>
-        </Routes>
-      </Router>
+      <StyledEngineProvider injectFirst>
+        <Router>
+          <Routes>
+            <Route path="/" element={<Navigate replace to="/signin" />} />
+            <Route path="/signin" element={<Login />}></Route>
+            <Route path="/forgot-password" element={<ForgotPassword />}></Route>
+            <Route
+              path="/activate-account"
+              element={<ActivateAccount />}
+            ></Route>
+          </Routes>
+        </Router>
+      </StyledEngineProvider>
     </>
   );
 }

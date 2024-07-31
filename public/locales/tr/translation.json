@@ -1,3 +1,12 @@
 {
-    "login": "Giriş Yap"
+    "signin": "Giriş Yap",
+    "signin_button": "GİRİŞ YAP",
+    "password": "Şifre",
+    "forgot_password_button": "ŞİFREMİ UNUTTUM",
+    "activate_account_button": "HESAP AKTİVASYONU İÇİN TIKLAYINIZ",
+    "forgot_password": "Şifremi Unuttum",
+    "reset_password_button": "ŞİFREMİ YENİLE",
+    "back_to_signin": "GİRİŞ EKRANINA DÖN",
+    "activate_account": "Hesap Aktivasyonu",
+    "send_activation_link": "AKTİVASYON LİNKİ GÖNDER"
 }
