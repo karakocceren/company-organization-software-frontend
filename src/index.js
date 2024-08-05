@@ -2,14 +2,22 @@ import React from "react";
 import "./i18n";
 import ReactDOM from "react-dom/client";
 import App from "./App";
+import { AuthProvider } from "./context/AuthProvider";
 //import reportWebVitals from "./reportWebVitals";
 import "./index.css";
+
+if (process.env.NODE_ENV === "development") {
+  const { worker } = require("./mocks/browser");
+  worker.start();
+}
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <React.Suspense fallback="loading...">
-      <App />
+      <AuthProvider>
+        <App />
+      </AuthProvider>
     </React.Suspense>
   </React.StrictMode>
 );

@@ -8,5 +8,8 @@
     "reset_password_button": "RESET PASSWORD",
     "back_to_signin": "BACK TO SIGN IN PAGE",
     "activate_account": "Activate Account",
-    "send_activation_link": "SEND ACTIVATION LINK"
+    "send_activation_link": "SEND ACTIVATION LINK",
+    "required_email": "Email cannot be empty!",
+    "required_password": "Password cannot be empty!",
+    "valid_email": "Please enter a valid email!"
 }

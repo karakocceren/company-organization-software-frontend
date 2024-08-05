@@ -25,7 +25,16 @@
 
 .form {
   width: 300px;
-  margin-bottom: 0;
+  margin: 0;
+}
+
+.form-title {
+  margin-top: 16px;
+}
+
+.form-error {
+  color: #d32f2f;
+  font-size: 12px;
 }
 
 .signin-button {

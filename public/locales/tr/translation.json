@@ -8,5 +8,8 @@
     "reset_password_button": "ŞİFREMİ YENİLE",
     "back_to_signin": "GİRİŞ EKRANINA DÖN",
     "activate_account": "Hesap Aktivasyonu",
-    "send_activation_link": "AKTİVASYON LİNKİ GÖNDER"
+    "send_activation_link": "AKTİVASYON LİNKİ GÖNDER",
+    "required_email": "Email boş bırakılamaz!",
+    "required_password": "Şifre boş bırakılamaz!",
+    "valid_email": "Lütfen geçerli bir mail adresi giriniz!"
 }
