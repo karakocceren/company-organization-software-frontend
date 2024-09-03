@@ -1,19 +1,23 @@
 import React from "react";
-import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import CardActions from "@mui/material/CardActions";
-import CardContent from "@mui/material/CardContent";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
-import FormControl from "@mui/material/FormControl";
-import { basicSchema } from "../../schemas";
 import { useFormik } from "formik";
 import { useTranslation } from "react-i18next";
+import {
+  Box,
+  Card,
+  CardActions,
+  CardContent,
+  Button,
+  Typography,
+  FormControl,
+  TextField,
+} from "@mui/material";
+import ValidationSchema from "../../schemas/ValidationSchema";
+
 import styles from "./ForgotPassword.module.css";
-import { TextField } from "@mui/material";
 
 const ForgotPassword = () => {
   const { t } = useTranslation();
+  const { activationAndForgotPasswordSchema } = ValidationSchema();
 
   const onSubmit = async (values, actions) => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -23,16 +27,16 @@ const ForgotPassword = () => {
   const {
     values,
     errors,
-    touched,
     isSubmitting,
     handleChange,
     handleBlur,
     handleSubmit,
+    submitCount,
   } = useFormik({
     initialValues: {
       email: "",
     },
-    validationSchema: basicSchema,
+    validationSchema: activationAndForgotPasswordSchema,
     onSubmit,
   });
 
@@ -64,7 +68,7 @@ const ForgotPassword = () => {
                 >
                   <TextField
                     name="email"
-                    error={errors.email && touched.email ? true : false}
+                    error={submitCount > 0 && errors.email ? true : false}
                     value={values.email}
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -74,7 +78,7 @@ const ForgotPassword = () => {
                   />
                 </FormControl>
                 <div>
-                  {errors.email && touched.email && (
+                  {submitCount > 0 && errors.email && (
                     <Typography className={styles["form-error"]}>
                       {errors.email}
                     </Typography>

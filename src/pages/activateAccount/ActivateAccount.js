@@ -1,38 +1,72 @@
-import React from "react";
-import Box from "@mui/material/Box";
-import Card from "@mui/material/Card";
-import CardActions from "@mui/material/CardActions";
-import CardContent from "@mui/material/CardContent";
-import Button from "@mui/material/Button";
-import Typography from "@mui/material/Typography";
-import FormControl from "@mui/material/FormControl";
-import { basicSchema } from "../../schemas";
+import React, { useState } from "react";
 import { useFormik } from "formik";
 import { useTranslation } from "react-i18next";
+import {
+  TextField,
+  Box,
+  Card,
+  CardActions,
+  CardContent,
+  Button,
+  Typography,
+  FormControl,
+} from "@mui/material";
+import ErrorMessage from "../../components/ErrorMessage";
+import ValidationSchema from "../../schemas/ValidationSchema";
+import axios from "../../api/axios";
+
 import styles from "./ActivateAccount.module.css";
-import { TextField } from "@mui/material";
+
+const ACTIVATE_ACCOUNT_URL = "/api/v1/auth/activate-account";
 
 const ActivateAccount = () => {
   const { t } = useTranslation();
+  const { activationAndForgotPasswordSchema } = ValidationSchema();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("error");
 
   const onSubmit = async (values, actions) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    actions.resetForm();
+    try {
+      const response = await axios.post(
+        ACTIVATE_ACCOUNT_URL,
+        JSON.stringify({
+          email: values.email,
+        })
+      );
+      const message = response?.data?.message;
+
+      setSnackbarMessage(message);
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      actions.resetForm();
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        "Failed to send activation link. Please try again.";
+      setSnackbarMessage(message);
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      actions.setSubmitting(false);
+    }
   };
 
   const {
     values,
     errors,
-    touched,
     isSubmitting,
     handleChange,
     handleBlur,
     handleSubmit,
+    submitCount,
   } = useFormik({
     initialValues: {
       email: "",
     },
-    validationSchema: basicSchema,
+    validationSchema: activationAndForgotPasswordSchema,
     onSubmit,
   });
 
@@ -63,7 +97,7 @@ const ActivateAccount = () => {
                 >
                   <TextField
                     name="email"
-                    error={errors.email && touched.email ? true : false}
+                    error={submitCount > 0 && errors.email ? true : false}
                     value={values.email}
                     onChange={handleChange}
                     onBlur={handleBlur}
@@ -73,7 +107,7 @@ const ActivateAccount = () => {
                   />
                 </FormControl>
                 <div>
-                  {errors.email && touched.email && (
+                  {submitCount > 0 && errors.email && (
                     <Typography className={styles["form-error"]}>
                       {errors.email}
                     </Typography>
@@ -97,6 +131,12 @@ const ActivateAccount = () => {
           </>
         }
       </Card>
+      <ErrorMessage
+        snackbarOpen={snackbarOpen}
+        setSnackbarOpen={setSnackbarOpen}
+        snackbarSeverity={snackbarSeverity}
+        snackbarMessage={snackbarMessage}
+      />
     </Box>
   );
 };

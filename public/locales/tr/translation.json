@@ -11,5 +11,15 @@
     "send_activation_link": "AKTİVASYON LİNKİ GÖNDER",
     "required_email": "Email boş bırakılamaz!",
     "required_password": "Şifre boş bırakılamaz!",
-    "valid_email": "Lütfen geçerli bir mail adresi giriniz!"
+    "valid_email": "Lütfen geçerli bir mail adresi giriniz!",
+    "reset_password": "Şifre Yenile",
+    "password_again": "Şifre Tekrar",
+    "min_password_length": "Şifre en az 8 karakter olmalı",
+    "max_password_length": "Şifre 32 karakteri geçemez",
+    "password_uppercase_letter": "Şifre en az bir büyük harf içermeli",
+    "password_lowercase_letter": "Şifre en az bir küçük harf içermeli",
+    "password_numeric_char": "Şifre en az bir sayı içermeli",
+    "password_special_char": "Şifre @$.!-+ karakterlerinden en az birini içermelidir.",
+    "password_match": "Şifreler eşleşmelidir",
+    "required_confirm_password": "Şifre tekrar boş bırakılamaz"
 }

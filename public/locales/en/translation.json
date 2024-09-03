@@ -11,5 +11,15 @@
     "send_activation_link": "SEND ACTIVATION LINK",
     "required_email": "Email cannot be empty!",
     "required_password": "Password cannot be empty!",
-    "valid_email": "Please enter a valid email!"
+    "valid_email": "Please enter a valid email!",
+    "reset_password": "Reset Password",
+    "password_again": "Password Again",
+    "min_password_length": "Password must be at least 8 characters long",
+    "max_password_length": "Password cannot exceed 32 characters",
+    "password_uppercase_letter": "Password must contain at least one uppercase character",
+    "password_lowercase_letter": "Password must contain at least one lowercase character",
+    "password_numeric_char": "Password must contain at least one numeric character",
+    "password_special_char": "Password must contain at least one special character among @$.!-+",
+    "password_match": "Passwords must match",
+    "required_confirm_password": "Confirm password is required"
 }

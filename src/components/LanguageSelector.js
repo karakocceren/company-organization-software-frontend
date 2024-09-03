@@ -1,10 +1,6 @@
-import Select from "@mui/material/Select";
-import Box from "@mui/material/Box";
-import InputLabel from "@mui/material/InputLabel";
-import MenuItem from "@mui/material/MenuItem";
-import FormControl from "@mui/material/FormControl";
-import LanguageIcon from "@mui/icons-material/Language";
 import { useTranslation } from "react-i18next";
+import { Box, Select, InputLabel, MenuItem, FormControl } from "@mui/material";
+import LanguageIcon from "@mui/icons-material/Language";
 
 const languages = [
   { code: "en", lang: "English" },
@@ -25,6 +21,7 @@ const LanguageSelector = () => {
         display: "flex",
         justifyContent: "flex-end",
         marginRight: "24px",
+        marginTop: "8px",
       }}
     >
       <FormControl
@@ -35,7 +32,12 @@ const LanguageSelector = () => {
         <InputLabel>
           <LanguageIcon />
         </InputLabel>
-        <Select label={<LanguageIcon />} displayEmpty onChange={handleChange}>
+        <Select
+          label={<LanguageIcon />}
+          defaultValue="en"
+          displayEmpty
+          onChange={handleChange}
+        >
           {languages.map((lng) => {
             return (
               <MenuItem key={lng.code} value={lng.code}>
