@@ -1,233 +1,280 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
+import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { randomId } from "@mui/x-data-grid-generator";
+import { Box, Typography, Autocomplete, TextField } from "@mui/material";
+import { useTranslation } from "react-i18next";
+import EditableTable from "../../components/EditableTable";
+import Table from "../../components/Table";
 import Sidebar from "../../components/Sidebar";
+import Profile from "../../components/Profile";
+import axios from "../../api/axios";
 
-const companyType = [{ id: 1, name: "Yazılım Geliştirme" }];
+const companyId = 1;
+const departmentId = 1;
 
-const city = [{ id: 1, name: "İzmir" }];
+const USERS_URL = `/api/v1/manager/companies/${companyId}/departments/${departmentId}/employees`;
 
-const region = [{ id: 1, name: "İzmir Güney" }];
+const ManagerDashboard = ({ showProfile = false }) => {
+  const { t } = useTranslation();
+  const [selectedTable, setSelectedTable] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { tableName } = useParams();
+  const navigate = useNavigate();
 
-const town = [{ id: 1, name: "Urla", regionId: 1, cityId: 1 }];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(
+          `/api/v1/manager/companies/${companyId}/departments/${departmentId}/employees`,
+          {
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${
+                JSON.parse(localStorage.getItem("auth")).token
+              }`,
+            },
+          }
+        );
+        console.log(response.data?.employees);
+        const usersData = response.data?.employees || [];
 
-const company = [
-  {
-    id: 1,
-    name: "Delta Akıllı Teknolojiler A.Ş.",
-    short_Name: "Delta",
-    companyTypeId: 1,
-    addressStreet: "Teknopark İzmir A8 Binası",
-    addressTown: 1,
-  },
-];
+        const initialUserRows = usersData.map((user) => ({
+          id: randomId(),
+          emailAddress: user?.email || "",
+          name: user?.name || "",
+          surname: user?.surname || "",
+          userRole: user?.role || "",
+        }));
 
-const DepartmentType = [
-  { id: 1, name: "Yönetsel" },
-  { id: 2, name: "Operasyonel" },
-];
+        setUsers(initialUserRows);
 
-const department = [
-  {
-    id: 1,
-    name: "Genel Müdürlük",
-    companyId: 1,
-    departmentTypeId: 1,
-    addressStreet: "Teknopark İzmir A8 Binası",
-    addressTown: 1,
-    managerId: 2,
-  },
-  {
-    id: 2,
-    name: "Yazılım Geliştirme",
-    companyId: 1,
-    departmentTypeId: 2,
-    addressStreet: "Teknopark İzmir A8 Binası",
-    addressTown: 1,
-    managerId: 2,
-  },
-];
+        setLoading(false);
+      } catch (error) {
+        console.error("Error fetching data", error);
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-const departmentHierarchy = [
-  { id: 1, childDepartmentId: 2, parentDepartmentId: 1 },
-];
+  console.log(users);
 
-const userRole = [
-  { id: 1, name: "Admin" },
-  { id: 2, name: "Manager" },
-  { id: 3, name: "User" },
-];
+  useEffect(() => {
+    console.log("tableName:", tableName);
+    if (tableName) {
+      const formattedTableName = tableName
+        .split("-")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+      setSelectedTable(formattedTableName);
+    } else {
+      setSelectedTable(null);
+      navigate("/manager/profile");
+    }
+  }, [tableName, navigate]);
 
-const initialUserRows = [
-  {
-    id: 1,
-    userRole: 1,
-    departmentId: 1,
-    name: "Manager",
-    surname: "Dashboard",
-    emailAddress: "admin@delta.smart",
-    isActive: 1,
-  },
-];
-
-const newCompanyRow = [
-  {
-    name: "",
-    short_Name: "",
-    companyTypeId: "",
-    addressStreet: "",
-    addressTown: "",
-  },
-];
-
-const newUserRow = [
-  {
-    userRole: "",
-    departmentId: "",
-    name: "",
-    surname: "",
-    emailAddress: "",
-    isActive: "",
-  },
-];
-
-const companyColumns = [
-  { field: "id", headerName: "ID", type: "number", width: 90 },
-  { field: "name", headerName: "Name", width: 90, editable: true },
-  { field: "short_Name" },
-  { field: "companyTypeId" },
-  { field: "addressStreet" },
-  { field: "addressTown" },
-];
-
-const userColumns = [
-  { field: "id", headerName: "ID", type: "number", width: 90 },
-  {
-    field: "userRole",
-    headerName: "User_Role_ID",
-    type: "number",
-    editable: true,
-  },
-  {
-    field: "departmentId",
-    headerName: "Department_ID",
-    type: "number",
-    editable: true,
-  },
-  {
-    field: "name",
-    headerName: "Name",
-    editable: true,
-  },
-  {
-    field: "surname",
-    headerName: "Surname",
-    editable: true,
-  },
-  {
-    field: "emailAddress",
-    headerName: "Email_Address",
-    editable: true,
-  },
-  {
-    field: "isActive",
-    headerName: "Is_Active",
-    type: "number",
-    editable: true,
-  },
-];
-
-const sidebarContent = ["Companies"];
-
-const ManagerDashboard = () => {
   const tableConfig = {
-    Users: {
+    "My Company": {
       initialRows: [
         {
-          id: 1,
-          userRole: 1,
-          departmentId: 1,
-          companyId: 1,
-          name: "System",
-          surname: "Administrator",
-          emailAddress: "admin@delta.smart",
-          isActive: 1,
-        },
-        {
-          id: 2,
-          userRole: 2,
-          departmentId: 1,
-          companyId: 1,
-          name: "Tolgahan",
-          surname: "Oysal",
-          emailAddress: "tolgahan.oysal@deltasmart.tech",
-          isActive: 0,
+          id: randomId(),
+          name: "Delta Akıllı Teknolojiler A.Ş.",
+          short_Name: "Delta",
+          companyType: "Yazılım Geliştirme",
+          addressStreet: "Teknopark İzmir A8 Binası",
+          addressTown: "Urla",
         },
       ],
+      columns: [
+        { field: "name", headerName: t("name"), width: 90 },
+        {
+          field: "short_Name",
+          headerName: t("short_name"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "companyType",
+          headerName: t("company_type"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "addressStreet",
+          headerName: t("address_street"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "addressTown",
+          headerName: t("address_town"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+      ],
+    },
+    "My Department": {
+      initialRows: [
+        {
+          id: randomId(),
+          name: "Genel Müdürlük",
+          company: "Delta Akıllı Teknolojiler A.Ş.",
+          departmentType: "Yönetsel",
+          addressStreet: "Teknopark İzmir A8 Binası",
+          addressTown: "Urla",
+          manager: "tolgahan.oysal@deltasmart.tech",
+        },
+      ],
+      columns: [
+        { field: "name", headerName: t("name"), width: 90 },
+        {
+          field: "company",
+          headerName: t("company"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "departmentType",
+          headerName: t("department_type"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "addressStreet",
+          headerName: t("address_street"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "addressTown",
+          headerName: t("address_town"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "manager",
+          headerName: t("manager"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+      ],
+    },
+    Users: {
+      initialRows: users,
       newRow: {
-        userRole: "",
-        departmentId: "",
-        companyId: "",
+        emailAddress: "",
         name: "",
         surname: "",
-        emailAddress: "",
-        isActive: "",
+        userRole: "",
       },
       columns: [
-        { field: "id", headerName: "ID", type: "number", width: 90 },
         {
-          field: "userRole",
-          headerName: "User_Role_ID",
-          type: "number",
-          editable: true,
-        },
-        {
-          field: "departmentId",
-          headerName: "Department_ID",
-          type: "number",
-          editable: true,
-        },
-        {
-          field: "companyId",
-          headerName: "Company_ID",
-          type: "number",
+          field: "emailAddress",
+          headerName: t("email_address"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
           editable: true,
         },
         {
           field: "name",
-          headerName: "Name",
-          editable: true,
+          headerName: t("name"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
         },
         {
           field: "surname",
-          headerName: "Surname",
-          editable: true,
+          headerName: t("surname"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
         },
         {
-          field: "emailAddress",
-          headerName: "Email_Address",
-          editable: true,
+          field: "userRole",
+          headerName: t("role"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
         },
-        {
-          field: "isActive",
-          headerName: "Is_Active",
-          type: "number",
-          editable: true,
-        },
-      ],
-    },
-    "Department Types": {
-      initialRows: [
-        { id: 1, name: "Yönetsel" },
-        { id: 2, name: "Operasyonel" },
-      ],
-      newRow: { name: "" },
-      columns: [
-        { field: "id", headerName: "ID", type: "number", width: 90 },
-        { field: "name", headerName: "Name", width: 90, editable: true },
       ],
     },
   };
 
-  return <Sidebar role="MANAGER" tableConfig={tableConfig} />;
+  const formatTableName = (name) => {
+    if (!name) return "";
+
+    return name
+      .split("-")
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  // Determine if the tableName exists in the tableConfig
+  const formattedTableName = formatTableName(tableName);
+  const isValidTable =
+    formattedTableName && tableConfig.hasOwnProperty(formattedTableName);
+
+  console.log(isValidTable);
+
+  return (
+    <Box sx={{ display: "flex" }}>
+      <Sidebar role="MANAGER" setSelectedTable={setSelectedTable} />
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+        }}
+      >
+        {showProfile ? (
+          <Profile />
+        ) : isValidTable ? (
+          selectedTable === "Users" ? (
+            <>
+              <Typography sx={{ marginBottom: "16px" }}>
+                You can add a user to your department by their email.
+              </Typography>
+              <Typography sx={{ marginTop: "16px" }}>
+                The users in your department:
+              </Typography>
+              <EditableTable
+                key={selectedTable}
+                initialRows={tableConfig[selectedTable]?.initialRows || []}
+                newRow={tableConfig[selectedTable]?.newRow || {}}
+                columns={tableConfig[selectedTable]?.columns || []}
+                loading={loading}
+                setLoading={setLoading}
+              />
+            </>
+          ) : (
+            <Table
+              key={selectedTable}
+              initialRows={tableConfig[selectedTable]?.initialRows || []}
+              columns={tableConfig[selectedTable]?.columns || []}
+              loading={loading}
+            />
+          )
+        ) : (
+          <Typography variant="h6">
+            Invalid table selected or table not found. Please select a valid
+            table.
+          </Typography>
+        )}
+      </Box>
+    </Box>
+  );
 };
 
 export default ManagerDashboard;

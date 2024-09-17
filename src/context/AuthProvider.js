@@ -9,7 +9,9 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
-    localStorage.setItem("auth", JSON.stringify(auth));
+    if (auth?.token) {
+      localStorage.setItem("auth", JSON.stringify(auth));
+    }
   }, [auth]);
 
   return (

@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useFormik } from "formik";
 import { useTranslation } from "react-i18next";
 import { Visibility, VisibilityOff } from "@mui/icons-material";
@@ -14,20 +15,68 @@ import {
   IconButton,
   TextField,
 } from "@mui/material";
+import ErrorMessage from "../../components/ErrorMessage";
 import ValidationSchema from "../../schemas/ValidationSchema";
+import axios from "../../api/axios";
 
 import styles from "./ResetPassword.module.css";
+
+const RESET_PASSWORD_URL = "/api/v1/auth/set-password";
 
 const ResetPassword = () => {
   const { t } = useTranslation();
   const { resetPasswordSchema } = ValidationSchema();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
+  const type = searchParams.get("type");
+
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("error");
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const onSubmit = async (values, actions) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    actions.resetForm();
+    console.log(token);
+    console.log(type);
+    console.log(values.password);
+    console.log(values.confirmPassword);
+    try {
+      const response = await axios.post(
+        `${RESET_PASSWORD_URL}?token=${encodeURIComponent(
+          token
+        )}&type=${encodeURIComponent(type)}`,
+        JSON.stringify({
+          token: token,
+          type: type,
+          password: values.password,
+          passwordAgain: values.confirmPassword,
+        })
+      );
+      const message = response?.data?.message;
+
+      setSnackbarMessage(message);
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+
+      setTimeout(() => {
+        navigate("/signin");
+      }, 2000);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      actions.resetForm();
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        "Failed to set password. Please try again.";
+      setSnackbarMessage(message);
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      actions.setSubmitting(false);
+    }
   };
 
   const {
@@ -188,6 +237,12 @@ const ResetPassword = () => {
           </>
         }
       </Card>
+      <ErrorMessage
+        snackbarOpen={snackbarOpen}
+        setSnackbarOpen={setSnackbarOpen}
+        snackbarSeverity={snackbarSeverity}
+        snackbarMessage={snackbarMessage}
+      />
     </Box>
   );
 };

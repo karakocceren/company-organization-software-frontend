@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import {
   Box,
   Drawer,
@@ -8,85 +9,35 @@ import {
   Divider,
   ListItem,
   ListItemButton,
-  ListItemIcon,
   ListItemText,
-  Button,
-  Avatar,
-  TextField,
-  Typography,
-  Chip,
 } from "@mui/material";
-import {
-  MoveToInbox as InboxIcon,
-  Mail as MailIcon,
-} from "@mui/icons-material";
-import EditableTable from "./EditableTable";
-import useAuth from "../hooks/useAuth";
-import axios from "../api/axios";
 
-const LOGOUT_URL = "/api/v1/auth/users/logout";
 const drawerWidth = 240;
 
-const Sidebar = ({ role, tableConfig }) => {
-  const { auth, setAuth } = useAuth();
+const Sidebar = ({ role, setSelectedTable }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const [selectedTable, setSelectedTable] = useState(null);
-  const selectedTableRef = useRef(null);
-
-  const logout = async () => {
-    try {
-      const token = auth?.token;
-      if (token) {
-        await axios.post(LOGOUT_URL, null, {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      }
-
-      localStorage.removeItem("auth");
-      setAuth({});
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      navigate("/signin");
-    } catch (err) {
-      console.error("Logout failed: ", err);
-    }
-  };
-
-  const handleLogout = async () => {
-    await logout();
-  };
 
   const getSidebarContent = (role) => {
     switch (role) {
       case "ADMIN":
         return [
-          "Users",
-          "Department Types",
-          "Company Types",
-          "Cities",
-          "Regions",
-          "Towns",
-          "Companies",
-          "Departments",
-          "Department Hierarchies",
-          "User Roles",
+          { key: "Companies", label: t("companies") },
+          { key: "Departments", label: t("departments") },
+          { key: "Users", label: t("users") },
+          { key: "Company Types", label: t("company_types") },
+          { key: "Department Types", label: t("department_types") },
+          { key: "Department Hierarchies", label: t("department_hierarchies") },
+          { key: "Cities", label: t("cities") },
+          { key: "Regions", label: t("regions") },
+          { key: "Towns", label: t("towns") },
         ];
       case "MANAGER":
         return [
-          "Users",
-          "Department Types",
-          "Company Types",
-          "Cities",
-          "Regions",
-          "Towns",
-          "Companies",
-          "Departments",
-          "Department Hierarchies",
-          "User Roles",
+          { key: "My Company", label: t("my_company") },
+          { key: "My Department", label: t("my_department") },
+          { key: "Users", label: t("users") },
         ];
-      case "EMPLOYEE":
-        return [];
       default:
         return [];
     }
@@ -95,24 +46,11 @@ const Sidebar = ({ role, tableConfig }) => {
   const sidebarContent = getSidebarContent(role);
 
   const handleTableSelection = (table) => {
-    setSelectedTable(table);
-    selectedTableRef.current = table;
+    setSelectedTable(table.key);
+    navigate(
+      `/${role.toLowerCase()}/${table.key.toLowerCase().replace(/\s+/g, "-")}`
+    );
   };
-
-  const getRoleColor = (role) => {
-    switch (role) {
-      case "ADMIN":
-        return "error";
-      case "MANAGER":
-        return "warning";
-      case "EMPLOYEE":
-        return "primary";
-      default:
-        return "primary";
-    }
-  };
-
-  const storedAuth = localStorage.getItem("auth");
 
   return (
     <Box sx={{ display: "flex" }}>
@@ -140,44 +78,18 @@ const Sidebar = ({ role, tableConfig }) => {
             flexDirection: "column",
             alignItems: "center",
             height: "100%",
+            marginTop: "16px",
           }}
         >
           <Box>
-            <Divider />
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                margin: "16px",
-              }}
-            >
-              <Avatar sx={{ width: 80, height: 80 }}>U</Avatar>
-              <Chip
-                label={storedAuth ? JSON.parse(storedAuth).role : "USER"}
-                color={getRoleColor(JSON.parse(storedAuth).role)}
-                size="small"
-                sx={{ margin: "8px" }}
-              />
-              <Typography>Name Surname</Typography>
-              <Button
-                variant="contained"
-                size="small"
-                sx={{ width: "100px", marginTop: "16px" }}
-                onClick={handleLogout}
-              >
-                Sign out
-              </Button>
-            </Box>
-            <Divider />
             <List>
-              {sidebarContent.map((text, index) => (
-                <ListItem key={text} disablePadding>
-                  <ListItemButton onClick={() => handleTableSelection(text)}>
+              {sidebarContent.map((item, index) => (
+                <ListItem key={item.key} disablePadding>
+                  <ListItemButton onClick={() => handleTableSelection(item)}>
                     {/*<ListItemIcon>
                       {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
                     </ListItemIcon>*/}
-                    <ListItemText primary={text} />
+                    <ListItemText primary={item.label} />
                   </ListItemButton>
                 </ListItem>
               ))}
@@ -185,25 +97,6 @@ const Sidebar = ({ role, tableConfig }) => {
           </Box>
         </Box>
       </Drawer>
-      <Box
-        sx={{
-          flexGrow: 1,
-          padding: "24px",
-        }}
-      >
-        {selectedTable ? (
-          <EditableTable
-            key={selectedTable}
-            initialRows={tableConfig[selectedTable]?.initialRows}
-            newRow={tableConfig[selectedTable]?.newRow}
-            columns={tableConfig[selectedTable]?.columns}
-          />
-        ) : (
-          <Typography variant="h6">
-            Please select a table to view its content.
-          </Typography>
-        )}
-      </Box>
     </Box>
   );
 };

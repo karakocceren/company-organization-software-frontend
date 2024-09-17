@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useFormik } from "formik";
 import { useTranslation } from "react-i18next";
 import {
@@ -11,17 +11,47 @@ import {
   FormControl,
   TextField,
 } from "@mui/material";
+import ErrorMessage from "../../components/ErrorMessage";
 import ValidationSchema from "../../schemas/ValidationSchema";
+import axios from "../../api/axios";
 
 import styles from "./ForgotPassword.module.css";
+
+const FORGOT_PASSWORD_URL = "/api/v1/auth/reset-password";
 
 const ForgotPassword = () => {
   const { t } = useTranslation();
   const { activationAndForgotPasswordSchema } = ValidationSchema();
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("error");
 
   const onSubmit = async (values, actions) => {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    actions.resetForm();
+    try {
+      const response = await axios.post(
+        FORGOT_PASSWORD_URL,
+        JSON.stringify({
+          email: values.email,
+        })
+      );
+      const message = response?.data?.message;
+
+      setSnackbarMessage(message);
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      actions.resetForm();
+    } catch (error) {
+      const message =
+        error?.response?.data?.message ||
+        "Failed to send activation link. Please try again.";
+      setSnackbarMessage(message);
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } finally {
+      actions.setSubmitting(false);
+    }
   };
 
   const {
@@ -102,6 +132,12 @@ const ForgotPassword = () => {
           </>
         }
       </Card>
+      <ErrorMessage
+        snackbarOpen={snackbarOpen}
+        setSnackbarOpen={setSnackbarOpen}
+        snackbarSeverity={snackbarSeverity}
+        snackbarMessage={snackbarMessage}
+      />
     </Box>
   );
 };

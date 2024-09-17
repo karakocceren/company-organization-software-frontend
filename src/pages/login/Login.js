@@ -57,8 +57,6 @@ const Login = () => {
         token,
       });
 
-      localStorage.setItem("auth", JSON.stringify(auth));
-
       setSnackbarMessage(message);
       setSnackbarSeverity("success");
       setSnackbarOpen(true);

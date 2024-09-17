@@ -34,8 +34,9 @@ const SetPassword = () => {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [errorMessage, setErrorMessage] = useState("");
-  const [successMessage, setSuccessMessage] = useState("");
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("error");
 
   const onSubmit = async (values, actions) => {
     console.log(token);
@@ -54,8 +55,12 @@ const SetPassword = () => {
           passwordAgain: values.confirmPassword,
         })
       );
-      console.log(JSON.stringify(response?.data));
-      setSuccessMessage("Password set successfully! Redirecting to login...");
+      const message = response?.data?.message;
+
+      setSnackbarMessage(message);
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+
       setTimeout(() => {
         navigate("/signin");
       }, 2000);
@@ -63,10 +68,12 @@ const SetPassword = () => {
       await new Promise((resolve) => setTimeout(resolve, 1000));
       actions.resetForm();
     } catch (error) {
-      setErrorMessage(
-        error.response?.data?.message ||
-          "Failed to set password. Please try again."
-      );
+      const message =
+        error?.response?.data?.message ||
+        "Failed to set password. Please try again.";
+      setSnackbarMessage(message);
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
     } finally {
       actions.setSubmitting(false);
     }
@@ -230,6 +237,12 @@ const SetPassword = () => {
           </>
         }
       </Card>
+      <ErrorMessage
+        snackbarOpen={snackbarOpen}
+        setSnackbarOpen={setSnackbarOpen}
+        snackbarSeverity={snackbarSeverity}
+        snackbarMessage={snackbarMessage}
+      />
     </Box>
   );
 };
