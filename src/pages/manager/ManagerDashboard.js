@@ -1,68 +1,146 @@
 import React, { useState, useEffect } from "react";
-import { useLocation, useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { randomId } from "@mui/x-data-grid-generator";
-import { Box, Typography, Autocomplete, TextField } from "@mui/material";
+import { Box, Typography, Alert } from "@mui/material";
 import { useTranslation } from "react-i18next";
-import EditableTable from "../../components/EditableTable";
 import Table from "../../components/Table";
 import Sidebar from "../../components/Sidebar";
 import Profile from "../../components/Profile";
+import useAuth from "../../hooks/useAuth";
 import axios from "../../api/axios";
-
-const companyId = 1;
-const departmentId = 1;
-
-const USERS_URL = `/api/v1/manager/companies/${companyId}/departments/${departmentId}/employees`;
 
 const ManagerDashboard = ({ showProfile = false }) => {
   const { t } = useTranslation();
-  const [selectedTable, setSelectedTable] = useState(null);
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { auth } = useAuth();
   const { tableName } = useParams();
   const navigate = useNavigate();
+  const [selectedTable, setSelectedTable] = useState(null);
+  const [users, setUsers] = useState([]);
+  const [addUsers, setAddUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [totalRowCount, setTotalRowCount] = useState(0);
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  });
+
+  const companyId = auth?.companyId;
+  const departmentId = auth?.departmentId;
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(
-          `/api/v1/manager/companies/${companyId}/departments/${departmentId}/employees`,
-          {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${
-                JSON.parse(localStorage.getItem("auth")).token
-              }`,
-            },
-          }
-        );
-        console.log(response.data?.employees);
-        const usersData = response.data?.employees || [];
+    if (selectedTable === "Add User") {
+      fetchAddUsersData(paginationModel.page, paginationModel.pageSize);
+    }
+    if (selectedTable === "Department Users") {
+      fetchDepartmentUsersData(paginationModel.page, paginationModel.pageSize);
+    }
+  }, [paginationModel]);
 
-        const initialUserRows = usersData.map((user) => ({
-          id: randomId(),
-          emailAddress: user?.email || "",
-          name: user?.name || "",
-          surname: user?.surname || "",
-          userRole: user?.role || "",
-        }));
+  useEffect(() => {
+    setPaginationModel({
+      page: 0,
+      pageSize: 10, // Reset to the first page
+    });
 
-        setUsers(initialUserRows);
-
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching data", error);
-        setLoading(false);
+    if (selectedTable) {
+      switch (selectedTable) {
+        case "Add User":
+          fetchAddUsersData(paginationModel.page, paginationModel.pageSize);
+          break;
+        case "Department Users":
+          fetchDepartmentUsersData(
+            paginationModel.page,
+            paginationModel.pageSize
+          );
+          break;
+        default:
+          break;
       }
-    };
-    fetchData();
-  }, []);
+    }
+  }, [selectedTable]);
 
-  console.log(users);
+  const fetchDepartmentUsersData = async (pageNumber, pageSize) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `/api/v1/manager/companies/${companyId}/departments/${departmentId}/employees`,
+        {
+          params: {
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+          },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${
+              JSON.parse(localStorage.getItem("auth")).token
+            }`,
+          },
+        }
+      );
+      const usersData = response.data?.employees || [];
+
+      const initialUserRows = usersData.map((user) => ({
+        id: randomId(),
+        emailAddress: user?.email || "",
+        name: user?.name || "",
+        surname: user?.surname || "",
+        userRole: user?.role || "",
+      }));
+
+      setTotalRowCount(response.data?.totalElements);
+      setUsers(initialUserRows);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data", error);
+      setLoading(false);
+    }
+  };
+
+  const fetchAddUsersData = async (pageNumber, pageSize) => {
+    try {
+      setLoading(true);
+      const response = await axios.get(
+        `/api/v1/manager/companies/${companyId}/departments/${departmentId}/addable-users`,
+        {
+          params: {
+            pageNumber: pageNumber,
+            pageSize: pageSize,
+          },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${
+              JSON.parse(localStorage.getItem("auth")).token
+            }`,
+          },
+        }
+      );
+      const addUsersData = response.data?.employees || [];
+
+      const initialAddUserRows = addUsersData.map((user) => ({
+        id: randomId(),
+        emailAddress: user?.email || "",
+        name: user?.name || "",
+        surname: user?.surname || "",
+        userRole: user?.role || "",
+      }));
+
+      setTotalRowCount(response.data?.totalElements);
+      setAddUsers(initialAddUserRows);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data", error);
+      setLoading(false);
+    }
+  };
+
+  const handlePaginationModelChange = (newModel) => {
+    setPaginationModel((prevModel) => ({
+      ...prevModel,
+      ...newModel,
+    }));
+  };
 
   useEffect(() => {
-    console.log("tableName:", tableName);
     if (tableName) {
       const formattedTableName = tableName
         .split("-")
@@ -76,101 +154,7 @@ const ManagerDashboard = ({ showProfile = false }) => {
   }, [tableName, navigate]);
 
   const tableConfig = {
-    "My Company": {
-      initialRows: [
-        {
-          id: randomId(),
-          name: "Delta Akıllı Teknolojiler A.Ş.",
-          short_Name: "Delta",
-          companyType: "Yazılım Geliştirme",
-          addressStreet: "Teknopark İzmir A8 Binası",
-          addressTown: "Urla",
-        },
-      ],
-      columns: [
-        { field: "name", headerName: t("name"), width: 90 },
-        {
-          field: "short_Name",
-          headerName: t("short_name"),
-          flex: 1,
-          headerAlign: "center",
-          align: "center",
-        },
-        {
-          field: "companyType",
-          headerName: t("company_type"),
-          flex: 1,
-          headerAlign: "center",
-          align: "center",
-        },
-        {
-          field: "addressStreet",
-          headerName: t("address_street"),
-          flex: 1,
-          headerAlign: "center",
-          align: "center",
-        },
-        {
-          field: "addressTown",
-          headerName: t("address_town"),
-          flex: 1,
-          headerAlign: "center",
-          align: "center",
-        },
-      ],
-    },
-    "My Department": {
-      initialRows: [
-        {
-          id: randomId(),
-          name: "Genel Müdürlük",
-          company: "Delta Akıllı Teknolojiler A.Ş.",
-          departmentType: "Yönetsel",
-          addressStreet: "Teknopark İzmir A8 Binası",
-          addressTown: "Urla",
-          manager: "tolgahan.oysal@deltasmart.tech",
-        },
-      ],
-      columns: [
-        { field: "name", headerName: t("name"), width: 90 },
-        {
-          field: "company",
-          headerName: t("company"),
-          flex: 1,
-          headerAlign: "center",
-          align: "center",
-        },
-        {
-          field: "departmentType",
-          headerName: t("department_type"),
-          flex: 1,
-          headerAlign: "center",
-          align: "center",
-        },
-        {
-          field: "addressStreet",
-          headerName: t("address_street"),
-          flex: 1,
-          headerAlign: "center",
-          align: "center",
-        },
-        {
-          field: "addressTown",
-          headerName: t("address_town"),
-          flex: 1,
-          headerAlign: "center",
-          align: "center",
-        },
-        {
-          field: "manager",
-          headerName: t("manager"),
-          flex: 1,
-          headerAlign: "center",
-          align: "center",
-        },
-      ],
-    },
-    Users: {
+    "Department Users": {
       initialRows: users,
       newRow: {
         emailAddress: "",
@@ -185,7 +169,45 @@ const ManagerDashboard = ({ showProfile = false }) => {
           flex: 1,
           headerAlign: "center",
           align: "center",
-          editable: true,
+        },
+        {
+          field: "name",
+          headerName: t("name"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "surname",
+          headerName: t("surname"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+        {
+          field: "userRole",
+          headerName: t("role"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
+      ],
+    },
+    "Add User": {
+      initialRows: addUsers,
+      newRow: {
+        emailAddress: "",
+        name: "",
+        surname: "",
+        userRole: "",
+      },
+      columns: [
+        {
+          field: "emailAddress",
+          headerName: t("email_address"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
         },
         {
           field: "name",
@@ -226,8 +248,6 @@ const ManagerDashboard = ({ showProfile = false }) => {
   const isValidTable =
     formattedTableName && tableConfig.hasOwnProperty(formattedTableName);
 
-  console.log(isValidTable);
-
   return (
     <Box sx={{ display: "flex" }}>
       <Sidebar role="MANAGER" setSelectedTable={setSelectedTable} />
@@ -241,31 +261,29 @@ const ManagerDashboard = ({ showProfile = false }) => {
         {showProfile ? (
           <Profile />
         ) : isValidTable ? (
-          selectedTable === "Users" ? (
-            <>
-              <Typography sx={{ marginBottom: "16px" }}>
-                You can add a user to your department by their email.
-              </Typography>
-              <Typography sx={{ marginTop: "16px" }}>
-                The users in your department:
-              </Typography>
-              <EditableTable
-                key={selectedTable}
-                initialRows={tableConfig[selectedTable]?.initialRows || []}
-                newRow={tableConfig[selectedTable]?.newRow || {}}
-                columns={tableConfig[selectedTable]?.columns || []}
-                loading={loading}
-                setLoading={setLoading}
-              />
-            </>
-          ) : (
+          <>
+            {selectedTable === "Department Users" && (
+              <Alert severity="info" sx={{ marginBottom: "24px" }}>
+                {t("manager_users_info")}
+              </Alert>
+            )}
+            {selectedTable === "Add User" && (
+              <Alert severity="info" sx={{ marginBottom: "24px" }}>
+                {t("manager_add_user_info")}
+              </Alert>
+            )}
             <Table
               key={selectedTable}
               initialRows={tableConfig[selectedTable]?.initialRows || []}
               columns={tableConfig[selectedTable]?.columns || []}
+              selectedTable={selectedTable || ""}
+              totalRowCount={totalRowCount}
+              paginationModel={paginationModel}
+              onPaginationModelChange={handlePaginationModelChange}
               loading={loading}
+              setLoading={setLoading}
             />
-          )
+          </>
         ) : (
           <Typography variant="h6">
             Invalid table selected or table not found. Please select a valid

@@ -4,18 +4,16 @@ import { useTranslation } from "react-i18next";
 import {
   AppBar,
   Toolbar,
-  Typography,
   Box,
   Divider,
   Avatar,
-  Chip,
   Tooltip,
   IconButton,
   Menu,
   MenuItem,
   ListItemIcon,
 } from "@mui/material";
-import { Logout, AccountCircleIcon } from "@mui/icons-material";
+import { Logout } from "@mui/icons-material";
 import LanguageSelector from "./LanguageSelector";
 import useAuth from "../hooks/useAuth";
 import axios from "../api/axios";

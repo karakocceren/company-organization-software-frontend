@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -6,7 +6,6 @@ import {
   Drawer,
   CssBaseline,
   List,
-  Divider,
   ListItem,
   ListItemButton,
   ListItemText,
@@ -34,9 +33,8 @@ const Sidebar = ({ role, setSelectedTable }) => {
         ];
       case "MANAGER":
         return [
-          { key: "My Company", label: t("my_company") },
-          { key: "My Department", label: t("my_department") },
-          { key: "Users", label: t("users") },
+          { key: "Department Users", label: t("department_users") },
+          { key: "Add User", label: t("add_user") },
         ];
       default:
         return [];
@@ -86,9 +84,6 @@ const Sidebar = ({ role, setSelectedTable }) => {
               {sidebarContent.map((item, index) => (
                 <ListItem key={item.key} disablePadding>
                   <ListItemButton onClick={() => handleTableSelection(item)}>
-                    {/*<ListItemIcon>
-                      {index % 2 === 0 ? <InboxIcon /> : <MailIcon />}
-                    </ListItemIcon>*/}
                     <ListItemText primary={item.label} />
                   </ListItemButton>
                 </ListItem>

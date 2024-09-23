@@ -39,10 +39,6 @@ const SetPassword = () => {
   const [snackbarSeverity, setSnackbarSeverity] = useState("error");
 
   const onSubmit = async (values, actions) => {
-    console.log(token);
-    console.log(type);
-    console.log(values.password);
-    console.log(values.confirmPassword);
     try {
       const response = await axios.post(
         `${SET_PASSWORD_URL}?token=${encodeURIComponent(

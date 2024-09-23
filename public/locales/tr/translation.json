@@ -56,5 +56,12 @@
     "child_department":"Alt Departman",
     "parent_department":"Üst Departman",
     "add_user": "Kullanıcı ekle",
-    "actions": "İşlemler"
+    "actions": "İşlemler",
+    "department_users": "Departman Kullanıcıları",
+    "role_admin": "ADMİN",
+    "role_manager": "MENAJER",
+    "role_employee": "ÇALIŞAN",
+    "admin_users_info": "Bir kullanıcıyı editlerken departman bilgisini silebilirsiniz. Bu kullanıcının şirket bilgisini de silecektir. Kullanıcıyı bir departmana alması için lütfen ilgili departmanın menajeri ile iletişime geçin.",
+    "manager_users_info": "Departmanınızdaki kullanıcılar bunlardır.",
+    "manager_add_user_info": "İstediğiniz kullanıcıları aşağıdaki tablodan 'EKLE' butonuna tıklayarak kendi departmanınıza ekleyebilirsiniz."
 }

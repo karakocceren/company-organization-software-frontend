@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
 import { StyledEngineProvider } from "@mui/material/styles";
 import Login from "./pages/login/Login";
@@ -66,7 +66,7 @@ function App() {
               path="/employee/profile"
               element={
                 <RequireAuth requiredRole="EMPLOYEE">
-                  <UserDashboard showProfile={true} />
+                  <UserDashboard />
                 </RequireAuth>
               }
             />

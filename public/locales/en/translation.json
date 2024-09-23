@@ -56,5 +56,12 @@
     "child_department":"Child Department",
     "parent_department":"Parent Department",
     "add_user": "Add User",
-    "actions": "Actions"
+    "actions": "Actions",
+    "department_users": "Department Users",
+    "role_admin": "ADMIN",
+    "role_manager": "MANAGER",
+    "role_employee": "EMPLOYEE",
+    "admin_users_info": "When editing a user, you can remove their department information. This will also remove the user's company information. Please contact the relevant department manager to assign the user to a department.",
+    "manager_users_info": "These are the users in your department.",
+    "manager_add_user_info": "You can add the users you want from the table below to your own department by clicking the 'ADD' button."
 }

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useParams, useNavigate } from "react-router-dom";
 import { randomId } from "@mui/x-data-grid-generator";
-import { Box, Typography, Autocomplete, TextField } from "@mui/material";
+import { Box, Typography, Autocomplete, TextField, Alert } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import EditableTable from "../../components/EditableTable";
 import Table from "../../components/Table";
@@ -18,6 +18,8 @@ const CITIES_URL = "/api/v1/public/cities";
 
 const AdminDashboard = ({ showProfile = false }) => {
   const { t } = useTranslation();
+  const { tableName } = useParams();
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [companies, setCompanies] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -26,157 +28,277 @@ const AdminDashboard = ({ showProfile = false }) => {
   const [cities, setCities] = useState([]);
   const [users, setUsers] = useState([]);
   const [selectedTable, setSelectedTable] = useState(null);
-  const location = useLocation();
-  const { tableName } = useParams();
-  const navigate = useNavigate();
+  const [totalRowCount, setTotalRowCount] = useState(0);
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 10,
+  });
 
   const userRoles = ["ADMIN", "MANAGER", "EMPLOYEE"];
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const [
-          companiesResponse,
-          departmentTypesResponse,
-          departmentsResponse,
-          usersResponse,
-          companyTypesResponse,
-          citiesResponse,
-        ] = await Promise.all([
-          axios.get(GET_COMPANIES_URL, {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${
-                JSON.parse(localStorage.getItem("auth")).token
-              }`,
-            },
-          }),
-          axios.get(DEPARTMENT_TYPES_URL, {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${
-                JSON.parse(localStorage.getItem("auth")).token
-              }`,
-            },
-          }),
-          axios.get(DEPARTMENTS_URL, {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${
-                JSON.parse(localStorage.getItem("auth")).token
-              }`,
-            },
-          }),
-          axios.get(ALL_USERS_API, {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${
-                JSON.parse(localStorage.getItem("auth")).token
-              }`,
-            },
-          }),
-          axios.get(COMPANY_TYPES_URL, {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${
-                JSON.parse(localStorage.getItem("auth")).token
-              }`,
-            },
-          }),
-          axios.get(CITIES_URL, {
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${
-                JSON.parse(localStorage.getItem("auth")).token
-              }`,
-            },
-          }),
-        ]);
-        const companiesData = companiesResponse.data?.content || [];
-        const departmentTypesData = departmentTypesResponse.data?.content || [];
-        const departmentsData = departmentsResponse.data?.content || [];
-        const usersData = usersResponse.data?.content || [];
-        const companyTypesData = companyTypesResponse.data?.content || [];
-        const citiesData = citiesResponse.data?.content || [];
-
-        const usersMap = new Map(usersData.map((user) => [user.id, user]));
-
-        const initialCompanyRows = companiesData.map((company) => ({
-          id: randomId(),
-          backendId: company?.id || "",
-          name: company?.name || "",
-          short_Name: company?.shortName || "",
-          companyType: company?.companyType?.name || "",
-          addressStreet: company?.addressDetail || "",
-          addressTown: company?.town || "",
-        }));
-
-        const initialDepartmentTypeRows = departmentTypesData.map(
-          (departmentType) => ({
-            id: randomId(),
-            name: departmentType?.name || "",
-          })
-        );
-
-        const initialDepartmentRows = departmentsData.map((department) => ({
-          id: randomId(),
-          backendId: department?.id || "",
-          name: department?.name || "",
-          company: department?.companyId || "",
-          departmentType: department?.departmentType?.id || "",
-          addressStreet: department?.addressDetail || "",
-          addressTown: department?.town || "",
-          manager: usersMap.get(department?.managerId)?.email || "",
-        }));
-
-        const initialUserRows = usersData.map((user) => ({
-          id: randomId(),
-          backendId: user?.id || "",
-          name: user?.name || "",
-          surname: user?.surname || "",
-          emailAddress: user?.email || "",
-          userRole: user?.roleName || "",
-          isActive: user?.active || "",
-          isEnabled: user?.enabled || "",
-          companyId: user?.companyId || "",
-          companyName: user?.companyName || "",
-          departmentId: user?.departmentId || "",
-          departmentName: user?.departmentName || "",
-        }));
-
-        const initialCompanyTypeRows = companyTypesData.map((companyType) => ({
-          id: randomId(),
-          name: companyType?.name || "",
-        }));
-
-        const initialCityRows = citiesData.map((city) => ({
-          id: randomId(),
-          name: city?.name || "",
-        }));
-
-        setCompanies(initialCompanyRows);
-        setDepartmentTypes(initialDepartmentTypeRows);
-        setDepartments(initialDepartmentRows);
-        setUsers(initialUserRows);
-        setCompanyTypes(initialCompanyTypeRows);
-        setCities(initialCityRows);
-
-        setLoading(false);
-      } catch (error) {
-        console.error("Error fetching data", error);
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
-  console.log(companies);
-  console.log(departments);
-  console.log(users);
+    if (selectedTable === "Users") {
+      fetchUsersData(paginationModel.page, paginationModel.pageSize);
+    }
+  }, [paginationModel]);
 
   useEffect(() => {
-    console.log("tableName:", tableName);
+    if (selectedTable) {
+      setPaginationModel({
+        page: 0,
+        pageSize: 10, // Reset to the first page
+      });
+
+      switch (selectedTable) {
+        case "Users":
+          fetchUsersData(paginationModel.page, paginationModel.pageSize);
+          fetchCompaniesData();
+          fetchDepartmentsData();
+          break;
+        case "Companies":
+          fetchCompaniesData(paginationModel.page, paginationModel.pageSize);
+          break;
+        case "Departments":
+          fetchDepartmentsData(paginationModel.page, paginationModel.pageSize);
+          break;
+        case "Department Types":
+          fetchDepartmentTypesData(
+            paginationModel.page,
+            paginationModel.pageSize
+          );
+          break;
+        case "Company Types":
+          fetchCompanyTypesData(paginationModel.page, paginationModel.pageSize);
+          break;
+        case "Cities":
+          fetchCitiesData(paginationModel.page, paginationModel.pageSize);
+          break;
+        case "Regions":
+          setTotalRowCount(1);
+          break;
+        case "Towns":
+          setTotalRowCount(1);
+          break;
+        case "Department Hierarchies":
+          setTotalRowCount(1);
+          break;
+        default:
+          break;
+      }
+    }
+  }, [selectedTable]);
+
+  const fetchCitiesData = async (pageNumber, pageSize) => {
+    try {
+      setLoading(true);
+      const citiesResponse = await axios.get(CITIES_URL, {
+        params: {
+          pageNumber: pageNumber,
+          pageSize: pageSize,
+        },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${
+            JSON.parse(localStorage.getItem("auth")).token
+          }`,
+        },
+      });
+      const citiesData = citiesResponse.data?.content || [];
+
+      const initialCityRows = citiesData.map((city) => ({
+        id: randomId(),
+        name: city?.name || "",
+      }));
+      setTotalRowCount(citiesResponse.data?.totalElements);
+      setCities(initialCityRows);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data", error);
+      setLoading(false);
+    }
+  };
+
+  const fetchCompanyTypesData = async (pageNumber, pageSize) => {
+    try {
+      setLoading(true);
+      const companyTypesResponse = await axios.get(COMPANY_TYPES_URL, {
+        params: {
+          pageNumber: pageNumber,
+          pageSize: pageSize,
+        },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${
+            JSON.parse(localStorage.getItem("auth")).token
+          }`,
+        },
+      });
+      const companyTypesData = companyTypesResponse.data?.content || [];
+
+      const initialCompanyTypeRows = companyTypesData.map((companyType) => ({
+        id: randomId(),
+        name: companyType?.name || "",
+      }));
+      setTotalRowCount(1);
+      setCompanyTypes(initialCompanyTypeRows);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data", error);
+      setLoading(false);
+    }
+  };
+
+  const fetchDepartmentsData = async (pageNumber, pageSize) => {
+    try {
+      setLoading(true);
+      const departmentsResponse = await axios.get(DEPARTMENTS_URL, {
+        params: {
+          pageNumber: pageNumber,
+          pageSize: pageSize,
+        },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${
+            JSON.parse(localStorage.getItem("auth")).token
+          }`,
+        },
+      });
+      const departmentsData = departmentsResponse.data?.content || [];
+
+      const initialDepartmentRows = departmentsData.map((department) => ({
+        id: randomId(),
+        backendId: department?.id || "",
+        name: department?.name || "",
+        company: department?.companyId || "",
+        departmentType: department?.departmentType?.id || "",
+        addressStreet: department?.addressDetail || "",
+        addressTown: department?.town || "",
+        manager: department?.managerEmail || "",
+      }));
+      setTotalRowCount(departmentsResponse.data?.totalElements);
+      setDepartments(initialDepartmentRows);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data", error);
+      setLoading(false);
+    }
+  };
+
+  const fetchDepartmentTypesData = async (pageNumber, pageSize) => {
+    try {
+      setLoading(true);
+      const departmentTypesResponse = await axios.get(DEPARTMENT_TYPES_URL, {
+        params: {
+          pageNumber: pageNumber,
+          pageSize: pageSize,
+        },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${
+            JSON.parse(localStorage.getItem("auth")).token
+          }`,
+        },
+      });
+      const departmentTypesData = departmentTypesResponse.data?.content || [];
+
+      const initialDepartmentTypeRows = departmentTypesData.map(
+        (departmentType) => ({
+          id: randomId(),
+          name: departmentType?.name || "",
+        })
+      );
+      setTotalRowCount(2);
+      setDepartmentTypes(initialDepartmentTypeRows);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data", error);
+      setLoading(false);
+    }
+  };
+
+  const fetchCompaniesData = async (pageNumber, pageSize) => {
+    try {
+      setLoading(true);
+      const companiesResponse = await axios.get(GET_COMPANIES_URL, {
+        params: {
+          pageNumber: pageNumber,
+          pageSize: pageSize,
+        },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${
+            JSON.parse(localStorage.getItem("auth")).token
+          }`,
+        },
+      });
+      const companiesData = companiesResponse.data?.content || [];
+
+      const initialCompanyRows = companiesData.map((company) => ({
+        id: randomId(),
+        backendId: company?.id || "",
+        name: company?.name || "",
+        short_Name: company?.shortName || "",
+        companyType: company?.companyType?.name || "",
+        addressStreet: company?.addressDetail || "",
+        addressTown: company?.town || "",
+      }));
+      setTotalRowCount(companiesResponse.data?.totalElements);
+      setCompanies(initialCompanyRows);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data", error);
+      setLoading(false);
+    }
+  };
+
+  const fetchUsersData = async (pageNumber, pageSize) => {
+    try {
+      setLoading(true);
+      const usersResponse = await axios.get(ALL_USERS_API, {
+        params: {
+          pageNumber: pageNumber,
+          pageSize: pageSize,
+        },
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${
+            JSON.parse(localStorage.getItem("auth")).token
+          }`,
+        },
+      });
+      const usersData = usersResponse.data?.content || [];
+
+      const initialUserRows = usersData.map((user) => ({
+        id: randomId(),
+        backendId: user?.id || "",
+        name: user?.name || "",
+        surname: user?.surname || "",
+        emailAddress: user?.email || "",
+        userRole: user?.roleName || "",
+        isActive: user?.active || "",
+        isEnabled: user?.enabled || "",
+        companyId: user?.companyId || "",
+        companyName: user?.companyName || "",
+        departmentId: user?.departmentId || "",
+        departmentName: user?.departmentName || "",
+      }));
+      setTotalRowCount(usersResponse.data?.totalElements);
+      setUsers(initialUserRows);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching data", error);
+      setLoading(false);
+    }
+  };
+
+  const handlePaginationModelChange = (newModel) => {
+    setPaginationModel((prevModel) => ({
+      ...prevModel,
+      ...newModel,
+    }));
+  };
+
+  useEffect(() => {
     if (tableName) {
       const formattedTableName = tableName
         .split("-")
@@ -210,6 +332,7 @@ const AdminDashboard = ({ showProfile = false }) => {
           field: "name",
           headerName: t("name"),
           editable: true,
+          minWidth: 120,
           flex: 1,
           headerAlign: "center",
           align: "center",
@@ -218,6 +341,7 @@ const AdminDashboard = ({ showProfile = false }) => {
           field: "surname",
           headerName: t("surname"),
           editable: true,
+          minWidth: 120,
           flex: 1,
           headerAlign: "center",
           align: "center",
@@ -226,6 +350,7 @@ const AdminDashboard = ({ showProfile = false }) => {
           field: "emailAddress",
           headerName: t("email_address"),
           editable: true,
+          minWidth: 220,
           flex: 1,
           headerAlign: "center",
           align: "center",
@@ -260,6 +385,7 @@ const AdminDashboard = ({ showProfile = false }) => {
           field: "companyName",
           headerName: t("company_name"),
           type: "singleSelect",
+          minWidth: 200,
           flex: 1,
           headerAlign: "center",
           align: "center",
@@ -270,17 +396,15 @@ const AdminDashboard = ({ showProfile = false }) => {
           editable: true,
           renderCell: (params) => params.value,
           renderEditCell: (params) => {
-            // Render the autocomplete dropdown in edit mode
             return (
               <Autocomplete
+                sx={{ width: "200px" }}
                 options={companies}
                 getOptionLabel={(option) => option.name}
                 renderInput={(params) => (
                   <TextField {...params} variant="outlined" />
                 )}
                 onChange={(event, newValue) => {
-                  console.log(newValue);
-                  console.log(newValue?.name);
                   const updatedRow = {
                     ...params.row,
                     companyId: newValue?.backendId || "",
@@ -291,10 +415,6 @@ const AdminDashboard = ({ showProfile = false }) => {
                   params.api.updateRows([{ id: updatedRow.id, ...updatedRow }]);
 
                   const allRows = params.api.getRowModels();
-                  console.log(
-                    "All Rows After Update:",
-                    Array.from(allRows.values())
-                  );
                 }}
                 value={
                   companies.find(
@@ -309,6 +429,7 @@ const AdminDashboard = ({ showProfile = false }) => {
           field: "departmentName",
           headerName: t("department_name"),
           type: "singleSelect",
+          minWidth: 200,
           flex: 1,
           headerAlign: "center",
           align: "center",
@@ -321,7 +442,6 @@ const AdminDashboard = ({ showProfile = false }) => {
           renderEditCell: (params) => {
             const selectedCompany = params.row.companyId;
 
-            //burayı sonra aç
             const filteredDepartments = departments.filter(
               (department) => department.company === selectedCompany
             );
@@ -330,20 +450,19 @@ const AdminDashboard = ({ showProfile = false }) => {
 
             return (
               <Autocomplete
-                options={filteredDepartments} //burayı sonra filteredDepartments yap
+                sx={{ width: "200px" }}
+                options={filteredDepartments}
                 getOptionLabel={(option) => option.name}
                 renderInput={(params) => (
                   <TextField {...params} variant="outlined" />
                 )}
                 disabled={isDepartmentFieldDisabled}
                 onChange={(event, newValue) => {
-                  console.log(newValue);
                   const updatedRow = {
                     ...params.row,
                     departmentId: newValue?.backendId || "",
                     departmentName: newValue?.name || "",
                   };
-                  console.log(updatedRow);
                   params.api.updateRows([{ id: updatedRow.id, ...updatedRow }]);
                 }}
                 value={
@@ -411,14 +530,15 @@ const AdminDashboard = ({ showProfile = false }) => {
       ],
     },
     Towns: {
-      initialRows: [{ id: randomId(), name: "Urla", region: 1, city: 1 }],
+      initialRows: [
+        { id: randomId(), name: "Urla", region: "İzmir Güney", city: "İzmir" },
+      ],
       newRow: { name: "", region: "", city: "" },
       columns: [
         { field: "name", headerName: t("name"), width: 90 },
         {
           field: "region",
           headerName: t("region"),
-          type: "number",
           flex: 1,
           headerAlign: "center",
           align: "center",
@@ -426,7 +546,6 @@ const AdminDashboard = ({ showProfile = false }) => {
         {
           field: "city",
           headerName: t("city"),
-          type: "number",
           flex: 1,
           headerAlign: "center",
           align: "center",
@@ -444,7 +563,13 @@ const AdminDashboard = ({ showProfile = false }) => {
         addressTown: "",
       },
       columns: [
-        { field: "name", headerName: t("name"), width: 90 },
+        {
+          field: "name",
+          headerName: t("name"),
+          flex: 1,
+          headerAlign: "center",
+          align: "center",
+        },
         {
           field: "short_Name",
           headerName: t("short_name"),
@@ -506,7 +631,6 @@ const AdminDashboard = ({ showProfile = false }) => {
         {
           field: "addressStreet",
           headerName: t("address_street"),
-          width: 90,
           flex: 1,
           headerAlign: "center",
           align: "center",
@@ -522,7 +646,6 @@ const AdminDashboard = ({ showProfile = false }) => {
         {
           field: "manager",
           headerName: t("manager"),
-          type: "number",
           flex: 1,
           headerAlign: "center",
           align: "center",
@@ -531,14 +654,17 @@ const AdminDashboard = ({ showProfile = false }) => {
     },
     "Department Hierarchies": {
       initialRows: [
-        { id: randomId(), childDepartment: 2, parentDepartment: 1 },
+        {
+          id: randomId(),
+          childDepartment: "Yazılım Geliştirme",
+          parentDepartment: "Genel Müdürlük",
+        },
       ],
       newRow: { childDepartment: "", parentDepartment: "" },
       columns: [
         {
           field: "childDepartment",
           headerName: t("child_department"),
-          type: "number",
           flex: 1,
           headerAlign: "center",
           align: "center",
@@ -546,7 +672,6 @@ const AdminDashboard = ({ showProfile = false }) => {
         {
           field: "parentDepartment",
           headerName: t("parent_department"),
-          type: "number",
           flex: 1,
           headerAlign: "center",
           align: "center",
@@ -569,8 +694,6 @@ const AdminDashboard = ({ showProfile = false }) => {
   const isValidTable =
     formattedTableName && tableConfig.hasOwnProperty(formattedTableName);
 
-  console.log(isValidTable);
-
   return (
     <Box sx={{ display: "flex" }}>
       <Sidebar role="ADMIN" setSelectedTable={setSelectedTable} />
@@ -585,20 +708,32 @@ const AdminDashboard = ({ showProfile = false }) => {
           <Profile />
         ) : isValidTable ? (
           selectedTable === "Users" ? (
-            <EditableTable
-              key={selectedTable}
-              initialRows={tableConfig[selectedTable]?.initialRows || []}
-              newRow={tableConfig[selectedTable]?.newRow || {}}
-              columns={tableConfig[selectedTable]?.columns || []}
-              loading={loading}
-              setLoading={setLoading}
-            />
+            <>
+              <Alert severity="info" sx={{ marginBottom: "24px" }}>
+                {t("admin_users_info")}
+              </Alert>
+              <EditableTable
+                key={selectedTable}
+                initialRows={tableConfig[selectedTable]?.initialRows || []}
+                newRow={tableConfig[selectedTable]?.newRow || {}}
+                columns={tableConfig[selectedTable]?.columns || []}
+                totalRowCount={totalRowCount}
+                paginationModel={paginationModel}
+                onPaginationModelChange={handlePaginationModelChange}
+                loading={loading}
+                setLoading={setLoading}
+              />
+            </>
           ) : (
             <Table
               key={selectedTable}
               initialRows={tableConfig[selectedTable]?.initialRows || []}
               columns={tableConfig[selectedTable]?.columns || []}
+              totalRowCount={totalRowCount}
+              paginationModel={paginationModel}
+              onPaginationModelChange={handlePaginationModelChange}
               loading={loading}
+              setLoading={setLoading}
             />
           )
         ) : (

@@ -12,7 +12,6 @@ import {
   GridToolbarContainer,
   GridActionsCellItem,
   GridRowModes,
-  GridRowEditStopReasons,
 } from "@mui/x-data-grid";
 import { trTR } from "@mui/x-data-grid/locales";
 import { randomId } from "@mui/x-data-grid-generator";
@@ -28,6 +27,9 @@ const EditableTable = ({
   initialRows,
   newRow,
   columns,
+  totalRowCount,
+  paginationModel,
+  onPaginationModelChange,
   loading,
   setLoading,
 }) => {
@@ -52,7 +54,6 @@ const EditableTable = ({
   }, [initialRows]);
 
   const handleAdminAddUser = async (updatedRow) => {
-    console.log(updatedRow);
     try {
       const response = await axios.post(
         ADMIN_ADD_USER_URL,
@@ -75,7 +76,6 @@ const EditableTable = ({
         }
       );
 
-      console.log(JSON.stringify(response?.data));
       const message = response?.data?.message;
 
       setSnackbarMessage(message);
@@ -85,7 +85,6 @@ const EditableTable = ({
       await new Promise((resolve) => setTimeout(resolve, 1000));
       return { success: true, data: response?.data };
     } catch (error) {
-      console.log(error.response?.data?.message);
       const message = error?.response?.data?.message || t("error");
       setSnackbarMessage(message);
       setSnackbarSeverity("error");
@@ -94,12 +93,23 @@ const EditableTable = ({
     }
   };
 
-  const handleManagerAddUser = async (updatedRow) => {
+  const handleAdminEditUser = async (updatedRow) => {
+    setLoading(true);
     try {
-      const response = await axios.post(
-        "/api/v1/manager/companies/1/departments/1/employees",
+      const response = await axios.put(
+        `/api/v1/admin/users/${updatedRow.backendId}`,
         JSON.stringify({
+          id: updatedRow.backendId,
+          name: updatedRow.name,
+          surname: updatedRow.surname,
           email: updatedRow.emailAddress,
+          roleName: updatedRow.userRole,
+          companyId: updatedRow.companyId,
+          companyName: updatedRow.companyName,
+          departmentId: updatedRow.departmentId,
+          departmentName: updatedRow.departmentName,
+          active: updatedRow.isActive,
+          enabled: updatedRow.isEnabled,
         }),
         {
           withCredentials: true,
@@ -112,28 +122,27 @@ const EditableTable = ({
         }
       );
 
-      console.log(JSON.stringify(response?.data));
-      const message = response?.data?.message;
+      const message = "Row edited successfully";
 
       setSnackbarMessage(message);
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
 
       await new Promise((resolve) => setTimeout(resolve, 1000));
-      return { success: true };
+      setLoading(false);
+      return { success: true, data: response?.data };
     } catch (error) {
-      console.log(error.response?.data?.message);
       const message = error?.response?.data?.message || t("error");
       setSnackbarMessage(message);
       setSnackbarSeverity("error");
       setSnackbarOpen(true);
-      return { success: false };
+      setLoading(false);
+      return { success: false, data: null };
     }
   };
 
   const handleDeleteRow = async (id) => {
     const rowToDelete = rows.find((row) => row.id === id);
-    console.log(rowToDelete?.emailAddress);
     try {
       const response = await axios.post(
         DELETE_USER_URL,
@@ -150,9 +159,6 @@ const EditableTable = ({
         }
       );
 
-      console.log(response?.data?.message);
-
-      // Show success message
       setSnackbarMessage(t("Row deleted successfully"));
       setSnackbarSeverity("success");
       setSnackbarOpen(true);
@@ -160,7 +166,6 @@ const EditableTable = ({
       // Remove the row from the state
       setRows((prevRows) => prevRows.filter((row) => row.id !== id));
     } catch (error) {
-      console.log(error.response?.data?.message);
       const message = error?.response?.data?.message || t("Error deleting row");
       setSnackbarMessage(message);
       setSnackbarSeverity("error");
@@ -195,7 +200,7 @@ const EditableTable = ({
     );
   }
 
-  const processRowUpdate = async (newRow) => {
+  const processRowUpdate = async (newRow, originalRow) => {
     if (userRole === "ADMIN") {
       if (newRow.isNew) {
         // Only add row if it is marked as new
@@ -204,15 +209,14 @@ const EditableTable = ({
         if (success && data) {
           const updatedRow = {
             ...newRow,
-            isNew: false, // Mark the row as not new
-            companyName: data.companyName || newRow.companyName, // Use the data from the response
-            departmentName: data.departmentName || newRow.departmentName, // Use the data from the response
+            isNew: false,
+            backendId: data.id || newRow.backendId,
+            companyName: data.companyName || newRow.companyName,
+            departmentName: data.departmentName || newRow.departmentName,
           };
-          // Mark row as no longer new after successful save
           setRows((prevRows) =>
             prevRows.map((row) => (row.id === newRow.id ? updatedRow : row))
           );
-          console.log(updatedRow);
           setRowModesModel((prevModel) => ({
             ...prevModel,
             [newRow.id]: { mode: GridRowModes.View },
@@ -226,30 +230,48 @@ const EditableTable = ({
         }
       } else {
         // Handle regular row edit (not new row)
-        console.log(newRow);
-        setRows((prevRows) =>
-          prevRows.map((row) => (row.id === newRow.id ? newRow : row))
-        );
-        setRowModesModel((prevModel) => ({
-          ...prevModel,
-          [newRow.id]: { mode: GridRowModes.View },
-        }));
-      }
-    }
+        const changedFields = {};
 
-    if (userRole === "MANAGER") {
-      console.log(newRow?.emailAddress);
-      setRowModesModel({
-        ...rowModesModel,
-        [newRow.id]: { mode: GridRowModes.View, ignoreModifications: true },
-      });
+        Object.keys(newRow).forEach((key) => {
+          if (newRow[key] !== originalRow[key]) {
+            changedFields[key] = { old: originalRow[key], new: newRow[key] };
+          }
+        });
+
+        const { success } = await handleAdminEditUser(newRow);
+
+        if (success) {
+          const updatedRow =
+            newRow.departmentId === ""
+              ? {
+                  ...newRow,
+                  companyId: "",
+                  companyName: "",
+                  departmentName: "",
+                }
+              : newRow;
+
+          setRows((prevRows) =>
+            prevRows.map((row) => (row.id === newRow.id ? updatedRow : row))
+          );
+
+          setRowModesModel((prevModel) => ({
+            ...prevModel,
+            [newRow.id]: { mode: GridRowModes.View },
+          }));
+        } else {
+          setRowModesModel((prevModel) => ({
+            ...prevModel,
+            [newRow.id]: { mode: GridRowModes.Edit },
+          }));
+        }
+      }
     }
 
     return newRow;
   };
 
   const handleRowEditStop = (params, event) => {
-    // Prevent row from switching back to edit mode due to focus loss or another unintended event
     if (params.reason === "rowFocusOut") {
       event.defaultMuiPrevented = true;
     }
@@ -261,7 +283,6 @@ const EditableTable = ({
 
   const handleSaveClick = (id) => () => {
     const rowToSave = rows.find((row) => row.id === id);
-    console.log(rowToSave);
 
     if (rowToSave) {
       setRowModesModel((prevModel) => ({
@@ -348,43 +369,6 @@ const EditableTable = ({
           ];
         }
 
-        if (userRole === "MANAGER" && row?.isNew) {
-          if (isInEditMode) {
-            return [
-              <GridActionsCellItem
-                icon={<SaveIcon />}
-                label="Save"
-                sx={{
-                  color: "primary.main",
-                }}
-                onClick={handleSaveClick(id)}
-              />,
-              <GridActionsCellItem
-                icon={<CancelIcon />}
-                label="Cancel"
-                className="textPrimary"
-                onClick={handleCancelClick(id)}
-                color="inherit"
-              />,
-            ];
-          }
-
-          return [
-            <GridActionsCellItem
-              icon={<EditIcon />}
-              label="Edit"
-              className="textPrimary"
-              onClick={handleEditClick(id)}
-              color="inherit"
-            />,
-            <GridActionsCellItem
-              icon={<DeleteIcon />}
-              label="Delete"
-              onClick={() => handleDeleteRow(id)}
-              color="inherit"
-            />,
-          ];
-        }
         return [];
       },
     },
@@ -408,11 +392,23 @@ const EditableTable = ({
         rows={rows}
         columns={columnsWithActions}
         editMode="row"
+        pagination
+        paginationMode="server"
+        rowCount={totalRowCount}
+        initialState={{
+          pagination: {
+            paginationModel: paginationModel,
+          },
+        }}
+        onPaginationModelChange={(newModel) =>
+          onPaginationModelChange(newModel)
+        }
+        pageSizeOptions={[10]}
         rowModesModel={rowModesModel}
         onRowModesModelChange={handleRowModesModelChange}
         onRowEditStop={handleRowEditStop}
         processRowUpdate={(updatedRow, originalRow) =>
-          processRowUpdate(updatedRow)
+          processRowUpdate(updatedRow, originalRow)
         }
         onProcessRowUpdateError={handleProcessRowUpdateError}
         slots={{

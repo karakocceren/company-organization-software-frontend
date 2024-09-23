@@ -28,11 +28,10 @@ const Login = () => {
   const { t } = useTranslation();
   const { loginSchema } = ValidationSchema();
   const navigate = useNavigate();
-  const { auth, setAuth } = useAuth();
+  const { setAuth } = useAuth();
   const userRef = useRef();
   const errRef = useRef();
 
-  const [data, setData] = useState("");
   const [errMsg, setErrMsg] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -48,11 +47,25 @@ const Login = () => {
           password: values.password,
         })
       );
+      const mail = response?.data?.email;
+      const name = response?.data?.name;
+      const surname = response?.data?.surname;
+      const companyId = response?.data?.companyId;
+      const companyName = response?.data?.companyName;
+      const departmentId = response?.data?.departmentId;
+      const departmentName = response?.data?.departmentName;
       const token = response?.data?.token;
       const role = response?.data?.roleName;
       const message = response?.data?.message;
 
       setAuth({
+        mail,
+        name,
+        surname,
+        companyId,
+        companyName,
+        departmentId,
+        departmentName,
         role,
         token,
       });
