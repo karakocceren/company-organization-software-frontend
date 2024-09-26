@@ -25,6 +25,7 @@ const Profile = () => {
   const fetchProfilePicture = async () => {
     try {
       const response = await axios.get(GET_PROFILE_PICTURE_URL, {
+        responseType: "blob",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${
@@ -32,7 +33,13 @@ const Profile = () => {
           }`,
         },
       });
-      setProfilePicture(response.data);
+
+      const reader = new FileReader();
+      reader.readAsDataURL(response.data);
+      reader.onloadend = () => {
+        const base64Image = reader.result;
+        setProfilePicture(base64Image);
+      };
     } catch (error) {
       console.error("Error fetching profile picture");
     }
@@ -106,7 +113,7 @@ const Profile = () => {
       >
         <Avatar
           sx={{ width: 150, height: 150 }}
-          src={profilePicture || undefined}
+          src={profilePicture ? profilePicture : undefined}
           alt="Profile Picture"
         >
           {profilePicture ? null : "U"}

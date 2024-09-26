@@ -100,7 +100,7 @@ const Header = () => {
                 aria-haspopup="true"
                 aria-expanded={open ? "true" : undefined}
               >
-                <Avatar sx={{ width: 48, height: 48 }}>U</Avatar>
+                <Avatar sx={{ width: 36, height: 36 }} />
               </IconButton>
             </Tooltip>
             <Menu
