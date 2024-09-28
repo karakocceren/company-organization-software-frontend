@@ -111,7 +111,7 @@ const SetPassword = () => {
                 color="text.primary"
                 gutterBottom
               >
-                {t("reset_password")}
+                {t("set_password")}
               </Typography>
 
               <form onSubmit={handleSubmit} autoComplete="off">
@@ -221,7 +221,7 @@ const SetPassword = () => {
                   disabled={isSubmitting}
                   className={styles["signin-button"]}
                 >
-                  {t("reset_password_button")}
+                  {t("set_password_button")}
                 </Button>
               </form>
             </CardContent>
